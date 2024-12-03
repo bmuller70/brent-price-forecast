@@ -1,0 +1,10 @@
+streamlit
+gdown
+pandas
+matplotlib
+seaborn
+numpy
+plotly
+prophet
+openpyxl
+statsmodels
