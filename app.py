@@ -77,21 +77,32 @@ def main():
     df_forecast = pd.DataFrame({'ds': ipeadata_filtered.index, 'y': ipeadata_filtered['preco']})
     future = modelo.make_future_dataframe(periods=2)
     forecast = modelo.predict(future)
-    previsao_hoje = forecast[forecast['ds'] == df_forecast.index[-1]]['yhat'].values[0]
-    previsao_amanha = forecast[forecast['ds'] == future['ds'].iloc[-1]]['yhat'].values[0]
-    tendencia = "subindo" if previsao_amanha > previsao_hoje else "descendo"
-    icone_tendencia = "🔼" if tendencia == "subindo" else "🔽"
 
-    st.markdown("### Previsão de Preço")
-    st.write(f"**Previsão para hoje**: ${previsao_hoje:,.2f}")
-    st.write(f"**Previsão para amanhã**: ${previsao_amanha:,.2f} {icone_tendencia} ({tendencia})")
+    # Verificar se a data está disponível no forecast
+    hoje = df_forecast.index[-1]
+    amanha = hoje + pd.Timedelta(days=1)
 
-    # Gráfico comparativo por ano
-    ipeadata_filtered['year'] = ipeadata_filtered.index.year
-    fig1, ax1 = plt.subplots(figsize=(14, 6))
-    sns.lineplot(data=ipeadata_filtered, x=ipeadata_filtered.index, y='preco', hue='year', marker='o', palette='tab10')
-    ax1.set_title("Comparação de Preços por Ano")
-    st.pyplot(fig1)
+    # Função para buscar previsões
+    def buscar_previsao(data, forecast_df):
+        previsoes = forecast_df[forecast_df['ds'] == data]
+        if not previsoes.empty:
+            return previsoes['yhat'].values[0]
+        else:
+            return None
+
+    # Obter previsões para hoje e amanhã
+    previsao_hoje = buscar_previsao(hoje, forecast)
+    previsao_amanha = buscar_previsao(amanha, forecast)
+
+    if previsao_hoje is not None and previsao_amanha is not None:
+        tendencia = "subindo" if previsao_amanha > previsao_hoje else "descendo"
+        icone_tendencia = "🔼" if tendencia == "subindo" else "🔽"
+        st.markdown("### Previsão de Preço")
+        st.write(f"**Previsão para hoje**: ${previsao_hoje:,.2f}")
+        st.write(f"**Previsão para amanhã**: ${previsao_amanha:,.2f} {icone_tendencia} ({tendencia})")
+    else:
+        st.warning("Não foi possível gerar previsões para as datas selecionadas.")
+
 
     # Gráfico de picos mensais
     ipeadata_filtered['month'] = ipeadata_filtered.index.month
